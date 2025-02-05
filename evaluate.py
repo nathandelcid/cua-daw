@@ -104,7 +104,8 @@ def evaluate_final_screenshot(guideline):
         ]
 
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            # model = "gpt-4o"
+            model="gpt-4-vision-preview",
             messages=eval_message,
             presence_penalty=1,
             frequency_penalty=1,

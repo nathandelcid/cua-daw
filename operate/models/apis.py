@@ -36,12 +36,12 @@ async def get_next_action(model, messages, objective, session_id):
         print("[Self-Operating Computer][get_next_action]")
         print("[Self-Operating Computer][get_next_action] model", model)
     if model == "gpt-4":
-        return call_gpt_4o(messages), None
+        return await call_gpt_4_vision(messages), None
     if model == "gpt-4-with-som":
-        operation = await call_gpt_4o_labeled(messages, objective, model)
+        operation = await call_gpt_4_vision_labeled(messages, objective, model)
         return operation, None
     if model == "gpt-4-with-ocr":
-        operation = await call_gpt_4o_with_ocr(messages, objective, model)
+        operation = await call_gpt_4_vision_with_ocr(messages, objective, model)
         return operation, None
     if model == "o1-with-ocr":
         operation = await call_o1_with_ocr(messages, objective, model)
@@ -59,9 +59,9 @@ async def get_next_action(model, messages, objective, session_id):
     raise ModelNotRecognizedException(model)
 
 
-def call_gpt_4o(messages):
+async def call_gpt_4_vision(messages):
     if config.verbose:
-        print("[call_gpt_4_v]")
+        print("[call_gpt_4_vision]")
     time.sleep(1)
     client = config.initialize_openai()
     try:
@@ -81,12 +81,6 @@ def call_gpt_4o(messages):
         else:
             user_prompt = get_user_prompt()
 
-        if config.verbose:
-            print(
-                "[call_gpt_4_v] user_prompt",
-                user_prompt,
-            )
-
         vision_message = {
             "role": "user",
             "content": [
@@ -100,26 +94,21 @@ def call_gpt_4o(messages):
         messages.append(vision_message)
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4-vision-preview",
             messages=messages,
             presence_penalty=1,
             frequency_penalty=1,
         )
 
         content = response.choices[0].message.content
-
         content = clean_json(content)
-
         assistant_message = {"role": "assistant", "content": content}
+
         if config.verbose:
-            print(
-                "[call_gpt_4_v] content",
-                content,
-            )
+            print("[call_gpt_4_vision] content", content)
+
         content = json.loads(content)
-
         messages.append(assistant_message)
-
         return content
 
     except Exception as e:
@@ -127,13 +116,9 @@ def call_gpt_4o(messages):
             f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_BRIGHT_MAGENTA}[Operate] That did not work. Trying again {ANSI_RESET}",
             e,
         )
-        print(
-            f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_RED}[Error] AI response was {ANSI_RESET}",
-            content,
-        )
         if config.verbose:
             traceback.print_exc()
-        return call_gpt_4o(messages)
+        return await call_gpt_4_vision(messages)
 
 
 def call_gemini_pro_vision(messages, objective):
@@ -185,12 +170,12 @@ def call_gemini_pro_vision(messages, objective):
         if config.verbose:
             print("[Self-Operating Computer][Operate] error", e)
             traceback.print_exc()
-        return call_gpt_4o(messages)
+        return call_gpt_4_vision(messages)
 
 
-async def call_gpt_4o_with_ocr(messages, objective, model):
+async def call_gpt_4_vision_with_ocr(messages, objective, model):
     if config.verbose:
-        print("[call_gpt_4o_with_ocr]")
+        print("[call_gpt_4_vision_with_ocr]")
 
     # Construct the path to the file within the package
     try:
@@ -227,7 +212,7 @@ async def call_gpt_4o_with_ocr(messages, objective, model):
         messages.append(vision_message)
 
         response = client.chat.completions.create(
-            model="o1",
+            model="gpt-4-vision-preview",
             messages=messages,
         )
 
@@ -247,7 +232,7 @@ async def call_gpt_4o_with_ocr(messages, objective, model):
                 text_to_click = operation.get("text")
                 if config.verbose:
                     print(
-                        "[call_gpt_4o_with_ocr][click] text_to_click",
+                        "[call_gpt_4_vision_with_ocr][click] text_to_click",
                         text_to_click,
                     )
                 # Initialize EasyOCR Reader
@@ -269,15 +254,15 @@ async def call_gpt_4o_with_ocr(messages, objective, model):
 
                 if config.verbose:
                     print(
-                        "[call_gpt_4o_with_ocr][click] text_element_index",
+                        "[call_gpt_4_vision_with_ocr][click] text_element_index",
                         text_element_index,
                     )
                     print(
-                        "[call_gpt_4o_with_ocr][click] coordinates",
+                        "[call_gpt_4_vision_with_ocr][click] coordinates",
                         coordinates,
                     )
                     print(
-                        "[call_gpt_4o_with_ocr][click] final operation",
+                        "[call_gpt_4_vision_with_ocr][click] final operation",
                         operation,
                     )
                 processed_content.append(operation)
@@ -340,7 +325,7 @@ async def call_o1_with_ocr(messages, objective, model):
         messages.append(vision_message)
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4-vision-preview",
             messages=messages,
         )
 
@@ -414,7 +399,7 @@ async def call_o1_with_ocr(messages, objective, model):
         return gpt_4_fallback(messages, objective, model)
 
 
-async def call_gpt_4o_labeled(messages, objective, model):
+async def call_gpt_4_vision_labeled(messages, objective, model):
     time.sleep(1)
 
     try:
@@ -462,7 +447,7 @@ async def call_gpt_4o_labeled(messages, objective, model):
         messages.append(vision_message)
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4-vision-preview",
             messages=messages,
             presence_penalty=1,
             frequency_penalty=1,
@@ -520,7 +505,7 @@ async def call_gpt_4o_labeled(messages, objective, model):
                     print(
                         f"{ANSI_GREEN}[Self-Operating Computer]{ANSI_RED}[Error] Failed to get click position in percent. Trying another method {ANSI_RESET}"
                     )
-                    return call_gpt_4o(messages)
+                    return call_gpt_4_vision(messages)
 
                 x_percent = f"{click_position_percent[0]:.2f}"
                 y_percent = f"{click_position_percent[1]:.2f}"
@@ -555,7 +540,7 @@ async def call_gpt_4o_labeled(messages, objective, model):
         if config.verbose:
             print("[Self-Operating Computer][Operate] error", e)
             traceback.print_exc()
-        return call_gpt_4o(messages)
+        return call_gpt_4_vision(messages)
 
 
 def call_ollama_llava(messages):
@@ -848,17 +833,15 @@ def get_last_assistant_message(messages):
 def gpt_4_fallback(messages, objective, model):
     if config.verbose:
         print("[gpt_4_fallback]")
-    system_prompt = get_system_prompt("gpt-4o", objective)
+    system_prompt = get_system_prompt("gpt-4-vision-preview", objective)
     new_system_message = {"role": "system", "content": system_prompt}
-    # remove and replace the first message in `messages` with `new_system_message`
-
     messages[0] = new_system_message
 
     if config.verbose:
         print("[gpt_4_fallback][updated]")
         print("[gpt_4_fallback][updated] len(messages)", len(messages))
 
-    return call_gpt_4o(messages)
+    return call_gpt_4_vision(messages)
 
 
 def confirm_system_prompt(messages, objective, model):
@@ -870,8 +853,6 @@ def confirm_system_prompt(messages, objective, model):
 
     system_prompt = get_system_prompt(model, objective)
     new_system_message = {"role": "system", "content": system_prompt}
-    # remove and replace the first message in `messages` with `new_system_message`
-
     messages[0] = new_system_message
 
     if config.verbose:

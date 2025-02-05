@@ -49,6 +49,7 @@ def main(model, terminal_prompt, voice_mode=False, verbose_mode=False):
     config.verbose = verbose_mode
     config.validation(model, voice_mode)
 
+
     if voice_mode:
         try:
             from whisper_mic import WhisperMic
@@ -60,6 +61,7 @@ def main(model, terminal_prompt, voice_mode=False, verbose_mode=False):
                 "Voice mode requires the 'whisper_mic' module. Please install it using 'pip install -r requirements-audio.txt'"
             )
             sys.exit(1)
+            
 
     # Skip message dialog if prompt was given directly
     if not terminal_prompt:
@@ -91,8 +93,9 @@ def main(model, terminal_prompt, voice_mode=False, verbose_mode=False):
             return  # Exit if voice input fails
     else:
         print(
-            f"[{ANSI_GREEN}Self-Operating Computer {ANSI_RESET}|{ANSI_BRIGHT_MAGENTA} {model}{ANSI_RESET}]\n{USER_QUESTION}"
+            f"[{ANSI_GREEN}Self-Operating Computer {ANSI_RESET}|{ANSI_BRIGHT_MAGENTA} {model}{ANSI_RESET}]\{USER_QUESTION}n"
         )
+
         print(f"{ANSI_YELLOW}[User]{ANSI_RESET}")
         objective = prompt(style=style)
 
